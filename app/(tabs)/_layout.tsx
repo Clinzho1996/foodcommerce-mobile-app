@@ -34,10 +34,7 @@ export default function TabLayout() {
 				headerShown: false,
 				tabBarShowLabel: false,
 				tabBarStyle: {
-					borderTopLeftRadius: 50,
-					borderTopRightRadius: 50,
-					borderBottomLeftRadius: 50,
-					borderBottomRightRadius: 50,
+					borderRadius: 50,
 					marginHorizontal: 20,
 					height: 80,
 					position: "absolute",
