@@ -1,7 +1,7 @@
 import { images } from "@/constants";
 import { TabBarIconProps } from "@/type";
 import cn from "clsx";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { Image, Text, View } from "react-native";
 
 const TabBarIcon = ({ focused, icon, title }: TabBarIconProps) => (
@@ -23,6 +23,10 @@ const TabBarIcon = ({ focused, icon, title }: TabBarIconProps) => (
 );
 
 export default function TabLayout() {
+	const isAuthenticated = false;
+
+	if (!isAuthenticated) return <Redirect href="/sign-in" />;
+
 	return (
 		<Tabs
 			screenOptions={{
