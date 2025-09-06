@@ -1,6 +1,7 @@
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
-import { signIn } from "@/lib/appwrite";
+import { getCurrentUser, signIn } from "@/lib/appwrite";
+import useAuthStore from "@/store/auth.store"; // import your auth store
 import * as Sentry from "@sentry/react-native";
 import { Link, router } from "expo-router";
 import { useState } from "react";
@@ -10,22 +11,40 @@ const SignIn = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [form, setForm] = useState({ email: "", password: "" });
 
+	const { setIsAuthenticated, setUser } = useAuthStore();
+
 	const submit = async () => {
 		const { email, password } = form;
 
-		if (!email || !password)
+		if (!email || !password) {
 			return Alert.alert(
 				"Error",
 				"Please enter valid email address & password."
 			);
+		}
 
 		setIsSubmitting(true);
 
 		try {
 			await signIn({ email, password });
+
+			// fetch user immediately after login
+			const user = await getCurrentUser();
+			if (user) {
+				setIsAuthenticated(true);
+				// Map DefaultDocument to User type
+				const mappedUser = {
+					name: user.name ?? "",
+					email: user.email ?? "",
+					avatar: user.avatar ?? "",
+					...user,
+				};
+				setUser(mappedUser);
+			}
+
 			router.replace("/");
 		} catch (error: any) {
-			Sentry.captureEvent(error);
+			Sentry.captureException(error);
 			Alert.alert("Error", error.message);
 		} finally {
 			setIsSubmitting(false);

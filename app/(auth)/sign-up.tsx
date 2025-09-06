@@ -1,18 +1,32 @@
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
-import { createUser } from "@/lib/appwrite";
+import { createUser, getCurrentUser } from "@/lib/appwrite";
+import useAuthStore from "@/store/auth.store";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Text, View } from "react-native";
+import {
+	Alert,
+	KeyboardAvoidingView,
+	Platform,
+	Text,
+	View,
+} from "react-native";
 
 const SignUp = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [form, setForm] = useState({ name: "", email: "", password: "" });
+	const { setIsAuthenticated, setUser } = useAuthStore();
+	const [form, setForm] = useState({
+		name: "",
+		email: "",
+		password: "",
+		phone: "",
+		address: "",
+	});
 
 	const submit = async () => {
-		const { name, email, password } = form;
+		const { name, email, password, phone, address } = form;
 
-		if (!name || !email || !password)
+		if (!name || !email || !password || !phone || !address)
 			return Alert.alert(
 				"Error",
 				"Please enter valid email address & password."
@@ -21,7 +35,25 @@ const SignUp = () => {
 		setIsSubmitting(true);
 
 		try {
-			await createUser({ email, password, name });
+			await createUser({ email, password, name, phone, address });
+
+			// fetch user immediately after login
+			const user = await getCurrentUser();
+			if (user) {
+				setIsAuthenticated(true);
+				// Map DefaultDocument to User type
+				const mappedUser = {
+					name: user.name ?? "",
+					email: user.email ?? "",
+					phone: user.phone ?? "",
+					address: user.address ?? "",
+					avatar: user.avatar ?? "",
+					...user,
+				};
+				setUser(mappedUser);
+			}
+
+			Alert.alert("Success", "Account created successfully");
 
 			router.replace("/");
 		} catch (error: any) {
@@ -32,7 +64,9 @@ const SignUp = () => {
 	};
 
 	return (
-		<View className="gap-10 bg-white rounded-lg p-5 mt-5">
+		<KeyboardAvoidingView
+			className="gap-10 bg-white rounded-lg p-5 mt-5"
+			behavior={Platform.OS === "ios" ? "padding" : "height"}>
 			<CustomInput
 				placeholder="Enter your full name"
 				value={form.name}
@@ -46,6 +80,20 @@ const SignUp = () => {
 				label="Email"
 				keyboardType="email-address"
 			/>
+			<CustomInput
+				placeholder="Enter your phone number"
+				value={form.phone}
+				onChangeText={(text) => setForm((prev) => ({ ...prev, phone: text }))}
+				label="Phone number"
+				keyboardType="phone-pad"
+			/>
+			<CustomInput
+				placeholder="Enter your address"
+				value={form.address}
+				onChangeText={(text) => setForm((prev) => ({ ...prev, address: text }))}
+				label="Delivery Address"
+			/>
+
 			<CustomInput
 				placeholder="Enter your password"
 				value={form.password}
@@ -66,7 +114,7 @@ const SignUp = () => {
 					Sign In
 				</Link>
 			</View>
-		</View>
+		</KeyboardAvoidingView>
 	);
 };
 

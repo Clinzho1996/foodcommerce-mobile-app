@@ -14,12 +14,12 @@ export const appwriteConfig = {
 	projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!,
 	platform: "com.devclinton.foodcommerce",
 	databaseId: "68baed390021f0054611",
-	bucketId: "68643e170015edaa95d7",
+	bucketId: "68bb07eb001129230446",
 	userCollectionId: "user",
-	categoriesCollectionId: "68643a390017b239fa0f",
-	menuCollectionId: "68643ad80027ddb96920",
-	customizationsCollectionId: "68643c0300297e5abc95",
-	menuCustomizationsCollectionId: "68643cd8003580ecdd8f",
+	categoriesCollectionId: "categories",
+	menuCollectionId: "menu",
+	customizationsCollectionId: "customizations",
+	menuCustomizationsCollectionId: "menu_customizations",
 };
 
 export const client = new Client();
@@ -37,6 +37,8 @@ const avatars = new Avatars(client);
 export const createUser = async ({
 	email,
 	password,
+	phone,
+	address,
 	name,
 }: CreateUserParams) => {
 	try {
@@ -51,7 +53,14 @@ export const createUser = async ({
 			appwriteConfig.databaseId,
 			appwriteConfig.userCollectionId,
 			ID.unique(),
-			{ email, name, accountId: newAccount.$id, avatar: avatarUrl }
+			{
+				email,
+				name,
+				phone,
+				address,
+				accountId: newAccount.$id,
+				avatar: avatarUrl,
+			}
 		);
 	} catch (e) {
 		throw new Error(e as string);
@@ -71,7 +80,7 @@ export const signIn = async ({ email, password }: SignInParams) => {
 export const getCurrentUser = async () => {
 	try {
 		const currentAccount = await account.get();
-		if (!currentAccount) throw Error;
+		if (!currentAccount) return null;
 
 		const currentUser = await databases.listDocuments(
 			appwriteConfig.databaseId,
@@ -79,12 +88,14 @@ export const getCurrentUser = async () => {
 			[Query.equal("accountId", currentAccount.$id)]
 		);
 
-		if (!currentUser) throw Error;
+		if (!currentUser || currentUser.documents.length === 0) {
+			return null; // no matching user found
+		}
 
 		return currentUser.documents[0];
 	} catch (e) {
-		console.log(e);
-		throw new Error(e as string);
+		console.log("getCurrentUser error:", e);
+		return null;
 	}
 };
 
@@ -103,6 +114,20 @@ export const getMenu = async ({ category, query }: GetMenuParams) => {
 
 		return menus.documents;
 	} catch (e) {
+		throw new Error(e as string);
+	}
+};
+
+export const getMenuById = async ($id: string) => {
+	try {
+		const menu = await databases.getDocument(
+			appwriteConfig.databaseId,
+			appwriteConfig.menuCollectionId,
+			$id
+		);
+		return menu;
+	} catch (e) {
+		console.error("getMenuById error:", e);
 		throw new Error(e as string);
 	}
 };
